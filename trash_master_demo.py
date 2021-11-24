@@ -1,25 +1,69 @@
-import requests
 import json
 import smtplib
-
 from email.message import EmailMessage
+
+import requests
 
 
 class TrashRequester:
     def __init__(self) -> None:
-        self.url = "https://warszawa19115.pl/harmonogramy-wywozu-odpadow?p_p_id=portalCKMjunkschedules_WAR_portalCKMjunkschedulesportlet_INSTANCE_o5AIb2mimbRJ&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=ajaxResourceURL&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_count=1"
+        self.url = (
+            "https://warszawa19115.pl/harmonogramy-wywozu-odpadow?p_p_id=portalCKMjunkschedules_WAR_portalCKMjunksched"
+            "ulesportlet_INSTANCE_o5AIb2mimbRJ&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=ajaxReso"
+            "urceURL&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_count=1"
+        )
         self.home = {
             "_portalCKMjunkschedules_WAR_portalCKMjunkschedulesportlet_INSTANCE_o5AIb2mimbRJ_addressPointId": "95175614"
         }
+        self.schedule = []
+        self.short_list = []
+        self.data = []
 
     def get_data(self) -> list:
         response = requests.post(self.url, data=self.home).text
         data = json.loads(response)
         schedule = data[0]["harmonogramy"]
 
-        calendar = [(i["data"], i["frakcja"]["nazwa"]) for i in schedule if i["data"] is not None]
+        schedule = [
+            (i["data"], i["frakcja"]["nazwa"])
+            for i in schedule
+            if i["data"] is not None
+        ]
 
-        return calendar
+        self.data = schedule
+
+    def convert_confusing_type(self) -> list:
+        message = self.data
+        converted = []
+
+        for position in message:
+
+            if position[1] == "zmieszane odpady opakowaniowe":
+                date = position[0]
+                type = position[1]
+                type = "metale i tworzywa sztuczne"
+            elif position[1] == "odpady kuchenne ulegające biodegradacji":
+                continue
+            elif position[1] == "odpady wielkogabarytowe":
+                continue
+            else:
+                date = position[0]
+                type = position[1]
+
+            converted.append((date, type))
+
+        self.schedule = sorted(converted, key=lambda x: x[0])
+
+    def create_short_list(self) -> list:
+        message = self.schedule
+        near_position = message[0][0]
+        short_list = []
+
+        for position in message:
+            if position[0] == near_position:
+                short_list.append(position)
+
+        self.short_list = short_list
 
 
 class Postman:
