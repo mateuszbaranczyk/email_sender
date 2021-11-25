@@ -30,40 +30,31 @@ class TrashRequester:
             if i["data"] is not None
         ]
 
-        self.data = schedule
+        return self._convert_confusing_type(schedule)
 
-    def convert_confusing_type(self) -> list:
-        message = self.data
+    def _convert_confusing_type(self, data) -> list:
         converted = []
 
-        for position in message:
+        for date, trash_type in data:
 
-            if position[1] == "zmieszane odpady opakowaniowe":
-                date = position[0]
-                type = position[1]
-                type = "metale i tworzywa sztuczne"
-            elif position[1] == "odpady kuchenne ulegające biodegradacji":
+            if trash_type == "zmieszane odpady opakowaniowe":
+                trash_type = "metale i tworzywa sztuczne"
+            elif trash_type in ("odpady kuchenne ulegające biodegradacji", "odpady wielkogabarytowe"):
                 continue
-            elif position[1] == "odpady wielkogabarytowe":
-                continue
-            else:
-                date = position[0]
-                type = position[1]
 
-            converted.append((date, type))
+            converted.append((date, trash_type))
 
-        self.schedule = sorted(converted, key=lambda x: x[0])
+        return sorted(converted, key=lambda x: x[0])
 
-    def create_short_list(self) -> list:
-        message = self.schedule
-        near_position = message[0][0]
+    def create_short_list(self, data) -> list:
+        nearest_course = data[0][0]
         short_list = []
 
-        for position in message:
-            if position[0] == near_position:
+        for position in data:
+            if position[0] == nearest_course:
                 short_list.append(position)
 
-        self.short_list = short_list
+        return short_list
 
 
 class Postman:
@@ -87,7 +78,6 @@ class Postman:
         msg.set_content(
             f"""Harmonogram wywozu śmieci:
         {message_content}
-
         NIE odpowiadaj na tą wiadomość!!!
         """
         )

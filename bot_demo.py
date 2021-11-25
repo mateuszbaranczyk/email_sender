@@ -19,18 +19,16 @@ class TelegramBot:
 
         self.trash_requester = TrashRequester()
 
-    def _create_whole_message(self):
-        self.trash_requester.get_data()
-        self.trash_requester.convert_confusing_type()
+    def create_full_message(self):
+        message = self.trash_requester.get_data()
 
-        return self._convert_message_to_str(self.trash_requester.schedule)
+        return self._convert_message_to_str(message)
 
-    def _create_short_message(self):
-        self.trash_requester.get_data()
-        self.trash_requester.convert_confusing_type()
-        self.trash_requester.create_short_list()
+    def create_short_message(self):
+        message = self.trash_requester.get_data()
+        short_message = self.trash_requester.create_short_list(message)
 
-        return self._convert_message_to_str(self.trash_requester.short_list)
+        return self._convert_message_to_str(short_message)
 
     def _convert_message_to_str(self, data) -> str:
         text = ""
@@ -42,14 +40,11 @@ class TelegramBot:
 
     def reply_schedule(self, update, *args, **kwargs) -> None:
         print(args, kwargs)
-        update.message.reply_text(self._create_short_message())
+        update.message.reply_text(self.create_short_message())
 
-    def reply_whole_schedule(self, update, *args, **kwargs) -> None:
+    def reply_full_schedule(self, update, *args, **kwargs) -> None:
         print(args, kwargs)
-        update.message.reply_text(self._create_whole_message())
-
-    def reply_hello(self, update, *args, **kwargs):
-        update.message.reply_text("Elo mordy!")
+        update.message.reply_text(self.create_full_message())
 
     def error(self, update, context):
         self.logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -58,8 +53,7 @@ class TelegramBot:
         dp = self.updater.dispatcher
         dp.add_error_handler(self.error)
         dp.add_handler(CommandHandler("trash", self.reply_schedule))
-        dp.add_handler(CommandHandler("trashall", self.reply_whole_schedule))
-        dp.add_handler(CommandHandler("hello", self.reply_hello))
+        dp.add_handler(CommandHandler("trashall", self.reply_full_schedule))
 
         self.updater.start_polling()
         self.updater.idle()
